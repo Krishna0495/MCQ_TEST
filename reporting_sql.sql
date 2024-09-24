@@ -1,0 +1,260 @@
+--1. How many tests were started?
+
+select 
+count(distinct(test_id))
+from
+session_log
+
+
+--2. How many tests were completed?
+select
+count(distinct(test_id))
+from
+test_assignment
+where submission_date is not null
+
+
+--3. How many tests were not completed and reasons for it.
+with time_taken as (
+    select
+    test_id,
+    student_id,
+    sum(datediff('h',session_start_time,session_end_time)) as total_time_taken_in_hrs
+    from
+    session_log
+    group by
+    test_id,
+    student_id
+
+)
+-- ,
+-- unanswered_questions as (
+--     select
+--     sl.student_id,
+--     sl.question_id,
+--     q.test_id
+--     from
+--     session_log sl 
+--     join
+--     answer a
+--     on sl.student_id=a.student_id
+--     and sl.question_id!=a.question_id
+--     join
+--     question q 
+--     on sl.question_id=q.question_id
+--     where a.is_active = 0
+--     group by
+--     sl.student_id,
+--     sl.question_id,
+--     q.test_id
+
+
+-- )
+-- total_time_taken_in_hrs>deadline --time out
+-- not attempted 
+-- unanswered_questions
+select
+count(distinct(case when tt.total_time_taken_in_hrs > t.deadline then tt.test_id else null end)) as number_of_overtime_test
+count(distinct(case when tt.student_id is null then ta.test_id else null end)) as number_of_unattempted_test
+from
+test t 
+inner join
+test_assignment ta
+on t.test_id=ta.test_id
+left join
+time_taken tt 
+on tt.test_id=ta.test_id
+and tt.student_id=ta.student_id
+-- left join
+-- unanswered_questions uq 
+-- on uq.test_id=ta.test_id
+-- and uq.student_id=ta.student_id
+where ta.submission_date is null
+
+
+-- Timeline for each action (question) taken by the student. This includes time taken to solve the current question, time taken to reach this question from the last question and time from the start of the test.
+
+
+-- test id , student id, question id, time_taken_question_id , time_taken_test_id , lag time_taken_question_id
+select
+test_id,
+student_id,
+question_id,
+time_taken_question_id_hrs,
+time_taken_question_id_solved_hrs,
+time_taken_reach_next_question_id_hrs,
+sum(time_taken_question_id_hrs) over(partition by test_id,student_id order by question_id) as time_taken_test_id_hrs,
+sum(time_taken_question_id_hrs) over(partition by test_id,student_id order by question_id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as cumulative_time_taken_in_test
+from
+(
+select
+test_id,
+student_id,
+question_id,
+datediff('h',start_time_question_id,end_time_question_id) as time_taken_question_id_hrs,
+datediff('h',start_time_question_id,end_time_question_id_solved) as time_taken_question_id_solved_hrs,
+lag(end_time_question_id,1) over(partition by test_id,student_id,question_id order by end_time_question_id asc) as prev_question_end_time,
+datediff('h',prev_question_end_time,start_time_question_id) as time_taken_reach_next_question_id_hrs,
+from
+(
+select
+test_id,
+student_id,
+question_id,
+min(session_start_time) as start_time_question_id
+max(session_end_time) as end_time_question_id
+max(case when is_active=1 then answer_timestamp else null end) as end_time_question_id_solved
+from
+session_log  sl
+group by
+test_id,
+student_id,
+question_id
+)
+)
+
+-- A funnel view to show the test performance (not student performance) set by the teacher.
+
+with time_taken as (
+    select
+    test_id,
+    student_id,
+    sum(datediff('h',session_start_time,session_end_time)) as total_time_taken_in_hrs
+    from
+    session_log
+    group by
+    test_id,
+    student_id
+
+)
+
+select
+t.test_id,
+case when status=1 then t.test_id else null end as active_test_id,
+case when status=0 then t.test_id else null end as inactive_test_id,
+t.total_questions,
+avg(t.deadline) as max_time_test,
+count(distinct(tas.student_id)) as total_student_enrolled,
+count(distinct(case when tas.submission_date is not null then tas.test_id else null end)) as total_submitted_test,
+count(distinct(case when tas.submission_date is null then tas.test_id else null end)) as total_unsubmitted_test,
+count(distinct(case when tt.total_time_taken_in_hrs > t.deadline then tt.test_id else null end)) as test_failed_number_of_overtime_test,
+count(distinct(case when tt.student_id is null then tas.test_id else null end)) as number_of_unattempted_test,
+sum(tt.total_time_taken_in_hrs)/count(distinct(tt.student_id)) as avg_time_taken_per_student
+
+from
+test t
+left join
+test_assignment tas
+on t.test_id=tas.test_id
+left join
+time_taken tt 
+on tt.test_id=tas.test_id
+and tt.student_id=tas.student_id
+
+
+-- Sessions level stats.
+
+select
+test_id,
+student_id,
+sum(datediff('h',session_start_time,session_end_time)) as total_time_taken_in_hrs,
+avg(datediff('h',session_start_time,session_end_time)) as avg_taken_in_hrs,
+count(distinct session_id) as total_session_id_each_test_per_student
+from
+session_log
+group by
+test_id,
+student_id
+
+-- Question level stats (most time-consuming question, mostly answered correctly
+-- questions, mostly revisited question, mostly answered wrong question etc).
+
+with time_taken as (
+    select
+    test_id,
+    question_id,
+    student_id,
+    min(session_start_time) as question_start_time,
+    max(session_end_time) as question_end_time
+    from
+    session_log
+    group by
+    test_id,
+    question_id,
+    student_id
+
+),
+correct_answer as (
+    select
+    q.question_id,
+    c.choice_id as correct_choice_id
+    from
+    question q
+    join
+    choice c 
+    on q.question_id=c.question_id
+    where c.is_correct=1
+),
+time_to_answer as (
+    select
+    sl.question_id,
+    sl.student_id,
+    a.choice_id,
+    min(sl.session_start_time) as question_start_time,
+    max(a.answer_timestamp) as answered_timestamp,
+    from
+    session_log sl
+    join
+    answer a 
+    on sl.question_id=a.question_id
+    and sl.student_id=a.student_id
+    where is_active=1
+
+)
+
+select
+a.question_id,
+avg(datediff('h',tt.question_start_time,tt.question_end_time)) avg_time_spent_question,
+max(datediff('h',tt.question_start_time,tt.question_end_time)) max_time_spent_question,
+avg(datediff('h',tt.question_start_time,tta.answered_timestamp)) avg_time_to_answer,
+max(datediff('h',tt.question_start_time,tta.answered_timestamp)) max_time_to_answer,
+case when a.choice_id=ca.correct_choice_id then 1 else 0 end no_correct_ans,
+case when a.choice_id!=ca.correct_choice_id then 1 else 0 end no_incorrect_ans,
+
+avg(
+    case when tta.choice_id=ca.correct_choice_id
+    then datediff('h',tt.question_start_time, tta.answer_timestamp)
+    else NULL end
+    ) as avg_time_correct_ans,
+
+max(
+    case when tta.choice_id=ca.correct_choice_id
+    then datediff('h',tt.question_start_time, tta.answer_timestamp)
+    else NULL end
+    ) as avg_time_correct_ans,
+      
+
+from
+question q 
+left join
+answer a 
+on q.question_id=a.question_id
+left join
+time_taken tt 
+on tt.question_id = a.question_id
+and tt.student_id=a.student_id
+left join 
+correct_answer ca
+on ca.question_id = a.question_id
+left join
+time_to_answer tta 
+on ca.question_id = a.question_id
+and tt.student_id=a.student_id
+
+
+-- Aggregated Tables
+
+-- Test_Stats
+
+
+
