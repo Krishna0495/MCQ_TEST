@@ -16,21 +16,14 @@ question or submit the test even 15 minutes after the session has expired.
 
 What you will do:
 1) Create an end-to-end data pipeline solution including data models for source data for the above problem statement. Also, suggest/create a dashboard where you can answer the below questions:
-   
-  ● How many tests were started?
-
-  ● How many tests were completed?
-
-  ● How many tests were not completed and reasons for it.
-
-  ● Timeline for each action (question) taken by the student. This includes time taken to solve the current question, time taken to reach this question from the last question and      time from the start of the test.
-
-  ● A funnel view to show the test performance (not student performance) set by the teacher.
-
-  ● Sessions level stats.
-
-  ● Question level stats (most time-consuming question, mostly answered correctly
-    questions, mostly revisited question, mostly answered wrong question etc).
+   a. How many tests were started?
+   b. How many tests were completed?
+   c. How many tests were not completed and reasons for it.
+   d. Timeline for each action (question) taken by the student. This includes time taken to solve the current question, time taken to reach this question from the last question          and time from the start of the test.
+   e. A funnel view to show the test performance (not student performance) set by the teacher.
+   f. Sessions level stats.
+   g. Question level stats (most time-consuming question, mostly answered correctly
+      questions, mostly revisited question, mostly answered wrong question etc).
 
 3) You can add any metrics that you can think of here.
 4) Define the refresh frequency of these metrics and their reasoning
