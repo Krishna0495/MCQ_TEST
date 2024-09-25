@@ -62,7 +62,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="ddjWA9hMiTF1KmU8gr_W-10" value="answer" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="880" y="170" width="220" height="220" as="geometry">
+          <mxGeometry x="880" y="170" width="220" height="200" as="geometry">
             <mxRectangle x="550" y="140" width="160" height="26" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
@@ -181,10 +181,7 @@
           <mxGeometry x="620" y="150" width="510" height="460" as="geometry" />
         </mxCell>
         <mxCell id="Svoe2r7AxQJzzrJ5CWHw-1" value="answer_timestamp (DATETIME) " style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
-          <mxGeometry x="880" y="352" width="220" height="26" as="geometry" />
-        </mxCell>
-        <mxCell id="Svoe2r7AxQJzzrJ5CWHw-2" value="is_active (INT) (1/0)" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
-          <mxGeometry x="880" y="326" width="220" height="26" as="geometry" />
+          <mxGeometry x="880" y="334" width="220" height="26" as="geometry" />
         </mxCell>
         <mxCell id="Svoe2r7AxQJzzrJ5CWHw-3" value="test_id (INT) (FK)" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
           <mxGeometry x="880" y="300" width="220" height="26" as="geometry" />
@@ -226,6 +223,9 @@
         </mxCell>
         <mxCell id="Svoe2r7AxQJzzrJ5CWHw-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="zkfFHV4jXpPFQw0GAbJ--18" target="Svoe2r7AxQJzzrJ5CWHw-11">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Svoe2r7AxQJzzrJ5CWHw-17" value="process_time (DATETIME)" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="650" y="544" width="210" height="26" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
