@@ -174,20 +174,35 @@ class data_ingestion:
         self.upsert_data("delta/test_assignment", valid_assignment_df, ["assignment_id"])
 
 
-    def ingest_session_data(self,assignment_data_input_file):
-        """Ingest and upsert Session log table data with FK check on Test and Student tables"""
+    # def ingest_session_data(self,assignment_data_input_file):
+    #     """Ingest and upsert Session log table data with FK check on Test and Student tables"""
 
-        new_test_submission_df = self.read_parquet(assignment_data_input_file)
-        fk_tables_dict = {
-            "test":["test_id"],
-            "student":["student_id"]
-                          }
+    #     new_test_submission_df = self.read_parquet(assignment_data_input_file)
+    #     fk_tables_dict = {
+    #         "test":["test_id"],
+    #         "student":["student_id"]
+    #                       }
 
-        for tables,columns in fk_tables_dict.items():
+    #     for tables,columns in fk_tables_dict.items():
 
-            parent_df = self.spark.read.format("delta").load(f"{self.gcs_bucket}/delta/{tables}")
+    #         parent_df = self.spark.read.format("delta").load(f"{self.gcs_bucket}/delta/{tables}")
 
-            valid_assignment_df = self.foreign_key_check(new_test_submission_df, parent_df, columns,"answer",tables )
+    #         valid_assignment_df = self.foreign_key_check(new_test_submission_df, parent_df, columns,"answer",tables )
 
-        self.upsert_data("delta/session_log", valid_assignment_df, ["assignment_id"])
+    #     self.upsert_data("delta/session_log", valid_assignment_df, ["assignment_id"])
 
+
+if __name__ == "__main__":
+    # Initialize the data ingestion object with GCS bucket name and error folder
+    data_ingestion = data_ingestion(gcs_bucket="gs://input_bucket", error_folder="gs://error_bucket/errors")
+
+    # Ingest data into the respective Delta tables using upsert and FK check logic
+    data_ingestion.ingest_test_data(test_data_input_file="test/")
+    data_ingestion.ingest_student_data(student_data_input_file="student/")
+    data_ingestion.ingest_question_data(question_data_input_file="question/")
+    data_ingestion.ingest_choice_data(choice_data_input_file="choice/")
+    data_ingestion.ingest_answer_data(answer_data_input_file="answer/")
+    data_ingestion.ingest_test_assignment_data(assignment_data_input_file="assignment/")
+
+    # Stop the Spark session
+    data_ingestion.stop_spark()
