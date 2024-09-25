@@ -19,6 +19,8 @@ with time_taken as (
     select
     test_id,
     student_id,
+    min(session_start_time) as test_start_time,
+    max(session_end_time) as test_end_time
     sum(datediff('h',session_start_time,session_end_time)) as total_time_taken_in_hrs
     from
     session_log
@@ -27,27 +29,30 @@ with time_taken as (
     student_id
 
 )
--- ,
--- unanswered_questions as (
---     select
---     sl.student_id,
---     sl.question_id,
---     q.test_id
---     from
---     session_log sl 
---     join
---     answer a
---     on sl.student_id=a.student_id
---     and sl.question_id!=a.question_id
---     join
---     question q 
---     on sl.question_id=q.question_id
---     where a.is_active = 0
---     group by
---     sl.student_id,
---     sl.question_id,
---     q.test_id
+,
+unanswered_questions as (
+    select
+    sl.student_id,
+    q.test_id,
+    case when sl.question_id is null then q.question_id else null end as unanswered_questions,
+    from
+    question q 
+    left join
+    session_log sl 
+    on sl.question_id=q.question_id
+    and sl.test_id=q.test_id
+    where concat(sl.student_id,sl.test_id,sl.question_id) not in (
+        select concat(a.student_id,a.test_id,a.question_id)
+        from
+        answer a
+        where a.is_active=1
+    )
+    group by
+    sl.student_id,
+    sl.question_id,
+    q.test_id
 
+)
 
 -- )
 -- total_time_taken_in_hrs>deadline --time out
@@ -55,7 +60,8 @@ with time_taken as (
 -- unanswered_questions
 select
 count(distinct(case when tt.total_time_taken_in_hrs > t.deadline then tt.test_id else null end)) as number_of_overtime_test
-count(distinct(case when tt.student_id is null then ta.test_id else null end)) as number_of_unattempted_test
+count(distinct(case when tt.student_id is null then ta.test_id else null end)) as number_of_unattempted_test,
+count(distinct(unanswered_questions)) as unanswered_questions_count
 from
 test t 
 inner join
@@ -65,12 +71,46 @@ left join
 time_taken tt 
 on tt.test_id=ta.test_id
 and tt.student_id=ta.student_id
--- left join
--- unanswered_questions uq 
--- on uq.test_id=ta.test_id
--- and uq.student_id=ta.student_id
+left join
+unanswered_questions uq 
+on uq.test_id=ta.test_id
+and uq.student_id=ta.student_id
 where ta.submission_date is null
+;
 
+-- 2) There is a bug in your app due to which students can submit the answers to any
+-- question or submit the test even 15 minutes after the session has expired.
+
+with time_taken as (
+    select
+    test_id,
+    student_id,
+    question_id
+    min(session_start_time) as test_start_time,
+    max(session_end_time) as test_end_time
+    sum(datediff('h',test_start_time,test_end_time)) as total_time_taken_in_hrs
+    from
+    session_log
+    group by
+    test_id,
+    student_id,
+    question_id
+
+)
+
+select
+sum(total_time_taken_in_hrs) over(partition by student_id,test_id order by question_id) as total_test_time_in_hrs,
+case when tt.total_test_time_in_hrs > t.deadline and ta.submission_date is not null then tt.test_id else null end as test_id_of_invalid_test_app_error,
+
+from
+test t 
+inner join
+test_assignment ta
+on t.test_id=ta.test_id
+left join
+time_taken tt 
+on tt.test_id=ta.test_id
+and tt.student_id=ta.student_id
 
 -- Timeline for each action (question) taken by the student. This includes time taken to solve the current question, time taken to reach this question from the last question and time from the start of the test.
 

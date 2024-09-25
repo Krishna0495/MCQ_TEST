@@ -9,12 +9,14 @@ current question will you be able to move on to the next question. But you can m
 4) Once all questions are answered, you can submit the test.
 5) This test can be attended in multiple sessions (each has a TTL of 30 minutes). When
 you re-login to test, you will be redirected to the last page you were on in the previous session.
-Some error cases to consider:
+
+
+#  Some error cases to consider:
 1) While submitting a question or test, the store call fails due to some system issue.
 2) There is a bug in your app due to which students can submit the answers to any
 question or submit the test even 15 minutes after the session has expired.
 
-What you will do:
+#  What you will do:
 1) Create an end-to-end data pipeline solution including data models for source data for the above problem statement. Also, suggest/create a dashboard where you can answer the below questions:
    a. How many tests were started?
    
