@@ -78,8 +78,9 @@ class data_ingestion:
 
         if fk_check:
             parent_df, fk_columns,child_table_name,parent_table_name = fk_check
-            valid_data_df = self.check_foreign_key(valid_data_df, parent_df, fk_columns,child_table_name,parent_table_name)
-            
+            valid_data_df = self.check_foreign_key(new_data_df, parent_df, fk_columns,child_table_name,parent_table_name)
+        else:
+            valid_data_df = new_data_df
             # Log FK violation errors
             # if invalid_fk_df.count() > 0:
             # self.write_errors(invalid_fk_df, delta_table_path, fk_reason)
