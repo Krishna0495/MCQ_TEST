@@ -45,39 +45,39 @@ class data_ingestion:
         valid_rows_df = child_df.join(parent_df, join_columns, "inner")
         return valid_rows_df
     
-    def get_max_primary_key(self, delta_table_path, pk_column):
-        """Fetch the maximum primary key from the Delta table"""
-        try:
-            # Load existing data from the Delta table
-            delta_table = self.spark.read.format("delta").load(delta_table_path)
+    # def get_max_primary_key(self, delta_table_path, pk_column):
+    #     """Fetch the maximum primary key from the Delta table"""
+    #     try:
+    #         # Load existing data from the Delta table
+    #         delta_table = self.spark.read.format("delta").load(delta_table_path)
             
-            # Get the maximum value of the primary key
-            max_pk_value = delta_table.agg(F.max(F.col(pk_column)).alias("max_pk")).collect()[0]["max_pk"]
-            return max_pk_value if max_pk_value is not None else 0  # Return 0 if the table is empty
-        except Exception as e:
-            print(f"Table '{delta_table_path}' not found. Starting primary key at 1.")
-            return 0  # If the table doesn't exist, start with 0
+    #         # Get the maximum value of the primary key
+    #         max_pk_value = delta_table.agg(F.max(F.col(pk_column)).alias("max_pk")).collect()[0]["max_pk"]
+    #         return max_pk_value if max_pk_value is not None else 0  # Return 0 if the table is empty
+    #     except Exception as e:
+    #         print(f"Table '{delta_table_path}' not found. Starting primary key at 1.")
+    #         return 0  # If the table doesn't exist, start with 0
 
-    def add_incremental_primary_key(self, df, pk_column, start_value):
-        """Add an incremental primary key to the DataFrame"""
-        ##### Memory issue of spark driver in case of high data inserts #####
-        window_spec = Window.orderBy(F.monotonically_increasing_id())
-        df_with_pk = df.withColumn(pk_column, F.row_number().over(window_spec) + start_value)
-        return df_with_pk
+    # def add_incremental_primary_key(self, df, pk_column, start_value):
+    #     """Add an incremental primary key to the DataFrame"""
+    #     ##### Memory issue of spark driver in case of high data inserts #####
+    #     window_spec = Window.orderBy(F.monotonically_increasing_id())
+    #     df_with_pk = df.withColumn(pk_column, F.row_number().over(window_spec) + start_value)
+    #     return df_with_pk
     
     def upsert_data(self, delta_table_path, new_data_df, key_columns, fk_check=None,pk_column=None):
         """Perform upsert (update + insert) logic for Delta Lake tables with optional foreign key check"""
         
-        # Generate incremental primary key if pk_column is provided
-        if pk_column:
-            max_pk_value = self.get_max_primary_key(f"{self.gcs_bucket}/{delta_table_path}", pk_column)
-            valid_data_df = self.add_incremental_primary_key(new_data_df, pk_column, max_pk_value)
+        # # Generate incremental primary key if pk_column is provided
+        # if pk_column:
+        #     max_pk_value = self.get_max_primary_key(f"{self.gcs_bucket}/{delta_table_path}", pk_column)
+        #     valid_data_df = self.add_incremental_primary_key(new_data_df, pk_column, max_pk_value)
 
-        else:
-            valid_data_df = new_data_df
+        # else:
+        #     valid_data_df = new_data_df
 
         if fk_check:
-            parent_df, fk_columns, fk_reason,child_table_name,parent_table_name = fk_check
+            parent_df, fk_columns,child_table_name,parent_table_name = fk_check
             valid_data_df = self.check_foreign_key(valid_data_df, parent_df, fk_columns,child_table_name,parent_table_name)
             
             # Log FK violation errors
