@@ -210,6 +210,53 @@ time_to_answer as (
     and sl.student_id=a.student_id
     where is_active=1
 
+),
+deduplicate_session_logs as (
+
+    select
+    sl.question_id,
+    sl.student_id,
+    sl.session_start_time
+    from
+    session_log sl
+    group by
+    sl.question_id,
+    sl.student_id,
+    sl.session_start_time
+
+),
+ranked_logs as (
+    select
+    student_id,
+    question_id,
+    session_start_time,
+    lag(question_id) over(partition by student_id order by session_start_time) as prev_question_id,
+    ROW_NUMBER() over(partition by student_id order by session_start_time) as row_num
+    from
+    deduplicate_session_logs
+
+),
+question_change as (
+    select
+    student_id,
+    question_id,
+    session_start_time,
+    prev_question_id,
+    case when question_id!=prev_question_id then 'Question visited' else 'No changed' end as change_status
+    from
+    ranked_logs
+    order by 
+    student_id,
+    session_start_time
+),
+revisited_questions as (
+    select
+    question_id,
+    sum(case when change_status = 'Question visited' then 1 else 0 end) sum_change_status
+    from
+    question_change
+    group by
+    question_id
 )
 
 select
@@ -231,8 +278,9 @@ max(
     case when tta.choice_id=ca.correct_choice_id
     then datediff('h',tt.question_start_time, tta.answer_timestamp)
     else NULL end
-    ) as avg_time_correct_ans,
-      
+    ) as max_time_correct_ans,
+
+sum(sum_change_status) as number_of_times_visited
 
 from
 question q 
@@ -250,7 +298,9 @@ left join
 time_to_answer tta 
 on ca.question_id = a.question_id
 and tt.student_id=a.student_id
-
+left join
+revisited_questions rq 
+on rq.question_id = q.question_id
 
 -- Aggregated Tables
 
