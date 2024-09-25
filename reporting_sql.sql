@@ -53,7 +53,6 @@ unanswered_questions as (
         select concat(a.student_id,a.test_id,a.question_id)
         from
         answer a
-        where a.is_active=1
     )
     group by
     sl.student_id,
@@ -156,9 +155,14 @@ student_id,
 question_id,
 min(session_start_time) as start_time_question_id
 max(session_end_time) as end_time_question_id
-max(case when is_active=1 then answer_timestamp else null end) as end_time_question_id_solved
+max(answer_timestamp) as end_time_question_id_solved
 from
 session_log  sl
+join
+answer a 
+on sl.test_id=a.test_id
+and sl.student_id = a.student_id
+and sl.question_id=a.question_id
 group by
 test_id,
 student_id,
@@ -321,7 +325,7 @@ time_to_answer as (
     answer a 
     on sl.question_id=a.question_id
     and sl.student_id=a.student_id
-    where is_active=1
+    and sl.test_id=sl.test_id
 
 ),
 deduplicate_session_logs as (
