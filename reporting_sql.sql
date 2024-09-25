@@ -1,5 +1,6 @@
 --1. How many tests were started?
-
+-- Card Metrics 
+-- Refresh rate: Daily refresh
 select 
 count(distinct(test_id))
 from
@@ -7,6 +8,8 @@ session_log
 
 
 --2. How many tests were completed?
+-- Card Metrics 
+-- Refresh rate: Daily refresh
 select
 count(distinct(test_id))
 from
@@ -15,6 +18,11 @@ where submission_date is not null
 
 
 --3. How many tests were not completed and reasons for it.
+-- 3 Card Metrics 
+    -- total_time_taken_in_hrs>deadline --time out
+    -- not attempted 
+    -- unanswered_questions
+-- Refresh rate: Daily refresh
 with time_taken as (
     select
     test_id,
@@ -55,9 +63,7 @@ unanswered_questions as (
 )
 
 -- )
--- total_time_taken_in_hrs>deadline --time out
--- not attempted 
--- unanswered_questions
+
 select
 count(distinct(case when tt.total_time_taken_in_hrs > t.deadline then tt.test_id else null end)) as number_of_overtime_test
 count(distinct(case when tt.student_id is null then ta.test_id else null end)) as number_of_unattempted_test,
@@ -81,6 +87,9 @@ where ta.submission_date is null
 -- 2) There is a bug in your app due to which students can submit the answers to any
 -- question or submit the test even 15 minutes after the session has expired.
 
+-- tabular view with test and student details to debug error
+-- Refresh rate: Daily refresh
+
 with time_taken as (
     select
     test_id,
@@ -100,8 +109,9 @@ with time_taken as (
 
 select
 sum(total_time_taken_in_hrs) over(partition by student_id,test_id order by question_id) as total_test_time_in_hrs,
-case when tt.total_test_time_in_hrs > t.deadline and ta.submission_date is not null then tt.test_id else null end as test_id_of_invalid_test_app_error,
-
+case when tt.total_test_time_in_hrs > t.deadline  then tt.test_id else null end as test_id_of_invalid_test_app_error,
+ta.student_id,
+ta.submission_date
 from
 test t 
 inner join
@@ -111,11 +121,14 @@ left join
 time_taken tt 
 on tt.test_id=ta.test_id
 and tt.student_id=ta.student_id
+where ta.submission_date is not null
 
 -- Timeline for each action (question) taken by the student. This includes time taken to solve the current question, time taken to reach this question from the last question and time from the start of the test.
-
-
 -- test id , student id, question id, time_taken_question_id , time_taken_test_id , lag time_taken_question_id
+
+-- tabular view with test
+-- Refresh rate: Daily refresh
+
 select
 test_id,
 student_id,
@@ -155,6 +168,9 @@ question_id
 
 -- A funnel view to show the test performance (not student performance) set by the teacher.
 
+-- funnel view 
+-- Refresh rate: Daily refresh
+
 with time_taken as (
     select
     test_id,
@@ -193,21 +209,78 @@ and tt.student_id=tas.student_id
 
 
 -- Sessions level stats.
+-- line chart view 
+-- Refresh rate: 1-2 hours refresh
 
+with session_stats as (
 select
 test_id,
 student_id,
-sum(datediff('h',session_start_time,session_end_time)) as total_time_taken_in_hrs,
-avg(datediff('h',session_start_time,session_end_time)) as avg_taken_in_hrs,
-count(distinct session_id) as total_session_id_each_test_per_student
+question_id,
+-- sum(datediff('h',session_start_time,session_end_time)) as total_time_taken_in_hrs,
+-- avg(datediff('h',session_start_time,session_end_time)) as avg_taken_in_hrs,
+count(distinct session_id) as total_session_id_each_test_per_student,
+min(session_start_time) as test_start_datetime,
+max(session_end_time) as test_end_datetime,
+-- min(Extract(hour from session_start_time)) as start_hour
+-- max(Extract(hour from session_end_time)) as end_hour
 from
 session_log
 group by
 test_id,
-student_id
+student_id,
+question_id
+)
+
+select
+cast(test_start_datetime as date) as session_start_date,
+cast(test_end_datetime as date) as session_end_date,
+count(distinct test_id) as no_of_tests_per_day,
+count(distinct student_id) as no_of_students_per_day,
+sum(total_session_id_each_test_per_student) as total_sessions,
+count(distinct question_id) as no_of_questions_per_day,
+from
+session_stats
+group by
+cast(test_start_datetime as date),
+cast(test_end_datetime as date)
+;
+
+with session_stats as (
+select
+test_id,
+student_id,
+question_id,
+-- sum(datediff('h',session_start_time,session_end_time)) as total_time_taken_in_hrs,
+-- avg(datediff('h',session_start_time,session_end_time)) as avg_taken_in_hrs,
+count(distinct session_id) as total_session_id_each_test_per_student,
+min(session_start_time) as test_start_datetime,
+max(session_end_time) as test_end_datetime
+from
+session_log
+group by
+test_id,
+student_id,
+question_id
+)
+
+select
+Extract(hour from test_start_datetime)  as session_start_hour,
+count(distinct test_id) as no_of_tests_per_day,
+count(distinct student_id) as no_of_students_per_day,
+sum(total_session_id_each_test_per_student) as total_sessions,
+count(distinct question_id) as no_of_questions_per_day,
+from
+session_stats
+group by
+Extract(hour from test_start_datetime)
 
 -- Question level stats (most time-consuming question, mostly answered correctly
 -- questions, mostly revisited question, mostly answered wrong question etc).
+
+-- Sessions level stats.
+-- line chart view 
+-- Refresh rate: Daily refresh
 
 with time_taken as (
     select
