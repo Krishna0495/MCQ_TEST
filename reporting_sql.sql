@@ -424,6 +424,9 @@ on rq.question_id = q.question_id
 -- Test_Stats
 select
 t.test_id,
+t.total_questions,
+case when status=1 then t.test_id else null as active_test,
+case when status=0 then t.test_id else null as inactive_test,
 sl.student_id,
 sl.question_id,
 a.choice_id,
@@ -454,9 +457,5 @@ left join
 choice c
 and a.question_id=c.question_id
 and a.choice_id=c.choice_id
-
-
-
-
-
+;
 
