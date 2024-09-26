@@ -422,6 +422,41 @@ on rq.question_id = q.question_id
 -- Aggregated Tables
 
 -- Test_Stats
+select
+t.test_id,
+sl.student_id,
+sl.question_id,
+a.choice_id,
+
+case when c.is_correct=1 then a.choice_id else null end as correct_answer,
+
+DATEDIFF('h',sl.session_start_time,sl.session_end_date) as total_time_spend_per_student_per_question,
+
+case when sl.session_end_date=a.answer_timestamp then 
+DATEDIFF('h',sl.session_start_time,a.answer_timestamp) else null 
+end as total_time_spend_per_student_per_question_to_answer
+
+from
+test t 
+left join
+test_assignment ta
+on ta.test_id=t.test_id
+left join
+session_log sl
+on sl.student_id=ta.student_id
+and sl.test_id=ta.test_id
+left join
+answer a 
+on sl.student_id=a.student_id
+and sl.test_id=a.test_id
+and sl.question_id=a.question_id
+left join
+choice c
+and a.question_id=c.question_id
+and a.choice_id=c.choice_id
+
+
+
 
 
 
