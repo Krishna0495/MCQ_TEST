@@ -23,7 +23,7 @@ session_schema = StructType([
     StructField("choice_id", IntegerType(), True),  # "started", "completed", etc.
     StructField("session_start_time", TimestampType(), True),
     StructField("session_end_time", TimestampType(), True)
-])
+    ])
 
 # Kafka topic and broker settings
 kafka_brokers = "localhost:9092"  
